@@ -43,6 +43,13 @@ def returnAnalysis(symbols):
     symbolsKV.sort(key=lambda x: x[1], reverse=True)
     return symbolsKV
 
+def returnPrices(symbols):
+    analysis = get_multiple_analysis(screener="america", interval=Interval.INTERVAL_1_WEEK, symbols=symbols)
+    prices = {}
+    for k, v in analysis.items():
+        prices[k] = v.indicators["close"]
+    return prices
+
 def SymbolVals():
     SymbolsAndValues = []
     for symbol in Symbols:
@@ -156,7 +163,7 @@ def test1(KV):
     maxKV = KV[0]
     maxSymb = maxKV[0]
     maxVal = maxKV[2]
-    curBal = int(sheet.cell(2,4).value)
+    curBal = float(sheet.cell(2,4).value)
     ammount = curBal/maxVal
     sheet.update_cell(2, 2, maxSymb)
     sheet.update_cell(2, 3, ammount)
@@ -165,10 +172,10 @@ def test2(KV):
     if not is_empty((3,3), "CEL"):
         sellAmmount = list(map(float, sheet.cell(3, 3).value[1:-1].replace(" ", "").split(",")))
         sellSymb = sheet.cell(3, 2).value[1:-1].replace(" ", "").replace("'", "").split(",")
-        sKV = returnAnalysis(sellSymb)
+        sKV = createPrices(sellSymb)
         newBal = 0
         for i in range(len(sKV)):
-            newBal += sellAmmount[i]*sKV[i][2]
+            newBal += sellAmmount[i] * sKV[sellSymb[i]]
         sheet.update_cell(3, 4, newBal)
     threeSymb = [KV[0][0], KV[1][0], KV[2][0]]
     threeScr = [KV[0][1], KV[1][1], KV[2][1]]
@@ -182,6 +189,41 @@ def test2(KV):
     sheet.update_cell(3, 2, str(threeSymb))
     sheet.update_cell(3, 3, str(amountList))
 
-kv = returnAnalysis(Symbols)
-test1(kv)
+def test3(KV):
+    if not is_empty((4,3), "CEL"):
+        sellAmmount = list(map(float, sheet.cell(4, 3).value[1:-1].replace(" ", "").split(",")))
+        sellSymb = sheet.cell(4, 2).value[1:-1].replace(" ", "").replace("'", "").split(",")
+        sKV = createPrices(sellSymb)
+        newBal = 0
+        for i in range(len(sKV)):
+            newBal += sellAmmount[i]*sKV[sellSymb[i]]
+        sheet.update_cell(4, 4, newBal)
+    threeSymb = [KV[-1][0], KV[-2][0], KV[-3][0]]
+    threeScr = [KV[-1][1], KV[-2][1], KV[-3][1]]
+    threeVal = [KV[-1][2], KV[-2][2], KV[-3][2]]
+    curBal = float(sheet.cell(4,4).value)
+    sum3 = sum(threeScr)
+    weightBal = [threeScr[0]/sum3*curBal, threeScr[1]/sum3*curBal, threeScr[2]/sum3*curBal]
+    amountList = []
+    for i in range(len(threeVal)):
+        amountList.append(weightBal[i]/threeVal[i])
+    sheet.update_cell(4, 2, str(threeSymb))
+    sheet.update_cell(4, 3, str(amountList))
+
+def createAnalysis(symbols):
+    try:
+        kv = returnAnalysis(symbols)
+    except:
+        kv = createAnalysis(symbols)
+    return kv
+
+def createPrices(symbols):
+    try:
+        pr = returnPrices(symbols)
+    except:
+        pr = createPrices(symbols)
+    return pr
+kv = createAnalysis(Symbols)
+test3(kv)
 test2(kv)
+test1(kv)
